@@ -31,9 +31,16 @@ func StartRepl(config *Config, cache *pokecache.Cache) {
 
 		command, exists := CheckCommands()[commandName]
 		if exists {
-			err := command.callback(config, cache)
-			if err != nil {
-				fmt.Println(err)
+			if len(words) >= 2 {
+				err := command.callback(words[1], config, cache)
+				if err != nil {
+					fmt.Println(err)
+				}
+			} else {
+				err := command.callback("", config, cache)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 			continue
 		} else {

@@ -2,6 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -16,6 +17,15 @@ type Locations struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"results"`
+}
+
+type PokemonInLocation struct {
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
 }
 
 func (c *Client) GetLocations(pageURL *string, cache *pokecache.Cache) (Locations, error) {
@@ -60,4 +70,40 @@ func (c *Client) GetLocations(pageURL *string, cache *pokecache.Cache) (Location
 	cache.Add(url, data)
 
 	return locations, nil
+}
+
+func (c *Client) Explore(area string, cache *pokecache.Cache) (PokemonInLocation, error) {
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%v", area)
+
+	pokemonLocations := PokemonInLocation{}
+	pokemonData, exists := cache.Get(area)
+	if exists {
+		err := json.Unmarshal(pokemonData, &pokemonLocations)
+		if err != nil {
+			return PokemonInLocation{}, err
+		}
+		return pokemonLocations, nil
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return PokemonInLocation{}, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return PokemonInLocation{}, err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return PokemonInLocation{}, err
+	}
+
+	err = json.Unmarshal(data, &pokemonLocations)
+	if err != nil {
+		return PokemonInLocation{}, err
+	}
+
+	return pokemonLocations, nil
 }

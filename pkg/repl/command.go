@@ -11,7 +11,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*Config, *pokecache.Cache) error
+	callback    func(string, *Config, *pokecache.Cache) error
 }
 
 func CheckCommands() map[string]cliCommand {
@@ -36,10 +36,15 @@ func CheckCommands() map[string]cliCommand {
 			description: "View the previous set of location areas",
 			callback:    commandMapB,
 		},
+		"explore": {
+			name:        "explore",
+			description: "View all pokemon in a given area",
+			callback:    commandExplore,
+		},
 	}
 }
 
-func commandHelp(c *Config, cache *pokecache.Cache) error {
+func commandHelp(area string, c *Config, cache *pokecache.Cache) error {
 	fmt.Println()
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
@@ -55,12 +60,12 @@ func commandHelp(c *Config, cache *pokecache.Cache) error {
 	return nil
 }
 
-func commandExit(config *Config, cache *pokecache.Cache) error {
+func commandExit(area string, config *Config, cache *pokecache.Cache) error {
 	os.Exit(0)
 	return nil
 }
 
-func commandMap(config *Config, cache *pokecache.Cache) error {
+func commandMap(area string, config *Config, cache *pokecache.Cache) error {
 	locations, err := config.PokeApiClient.GetLocations(config.Next, cache)
 	if err != nil {
 		return err
@@ -76,7 +81,7 @@ func commandMap(config *Config, cache *pokecache.Cache) error {
 	return nil
 }
 
-func commandMapB(config *Config, cache *pokecache.Cache) error {
+func commandMapB(area string, config *Config, cache *pokecache.Cache) error {
 	if config.Previous == nil {
 		return errors.New("this is the first page")
 	}
@@ -91,6 +96,21 @@ func commandMapB(config *Config, cache *pokecache.Cache) error {
 
 	for _, loc := range locations.Results {
 		fmt.Println(loc.Name)
+	}
+
+	return nil
+}
+
+func commandExplore(area string, config *Config, cache *pokecache.Cache) error {
+	pokemonLocations, err := config.PokeApiClient.Explore(area, cache)
+	if err != nil {
+		errMessage := fmt.Sprintf("could not find area: %v", area)
+		return errors.New(errMessage)
+	}
+	fmt.Printf("Exploring area %v...\n", area)
+	fmt.Println("Found Pokemon:")
+	for _, pokemon := range pokemonLocations.PokemonEncounters {
+		fmt.Printf("  - %v\n", pokemon.Pokemon.Name)
 	}
 
 	return nil
