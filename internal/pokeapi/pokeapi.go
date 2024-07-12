@@ -28,6 +28,28 @@ type PokemonInLocation struct {
 	} `json:"pokemon_encounters"`
 }
 
+type PokemonInfo struct {
+	Name           string `json:"name"`
+	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	Weight         int    `json:"weight"`
+	Stats          []struct {
+		BaseStat int `json:"base_stat"`
+		Effort   int `json:"effort"`
+		Stat     struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Slot int `json:"slot"`
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+	} `json:"types"`
+}
+
 func (c *Client) GetLocations(pageURL *string, cache *pokecache.Cache) (Locations, error) {
 	url := "https://pokeapi.co/api/v2/location-area"
 	if pageURL != nil {
@@ -106,4 +128,32 @@ func (c *Client) Explore(area string, cache *pokecache.Cache) (PokemonInLocation
 	}
 
 	return pokemonLocations, nil
+}
+
+func (c *Client) GetPokemon(pokemon string) (PokemonInfo, error) {
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%v", pokemon)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return PokemonInfo{}, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return PokemonInfo{}, err
+	}
+	defer resp.Body.Close()
+
+	pokemonInfo := PokemonInfo{}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return PokemonInfo{}, err
+	}
+
+	err = json.Unmarshal(data, &pokemonInfo)
+	if err != nil {
+		return PokemonInfo{}, err
+	}
+
+	return pokemonInfo, nil
 }

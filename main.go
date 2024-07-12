@@ -13,6 +13,7 @@ func main() {
 	pokeCache := pokecache.NewCache(5 * time.Minute)
 	config := &repl.Config{
 		PokeApiClient: pokeClient,
+		Pokedex:       make(map[string]pokeapi.PokemonInfo),
 	}
 
 	repl.StartRepl(config, pokeCache)

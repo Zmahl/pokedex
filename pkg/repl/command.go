@@ -3,6 +3,7 @@ package repl
 import (
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 
 	"github.com/Zmahl/pokedexcli/internal/pokecache"
@@ -40,6 +41,16 @@ func CheckCommands() map[string]cliCommand {
 			name:        "explore",
 			description: "View all pokemon in a given area",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Chance to catch a given pokemon",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "View details from pokedex on a given pokemon",
+			callback:    commandInspect,
 		},
 	}
 }
@@ -111,6 +122,55 @@ func commandExplore(area string, config *Config, cache *pokecache.Cache) error {
 	fmt.Println("Found Pokemon:")
 	for _, pokemon := range pokemonLocations.PokemonEncounters {
 		fmt.Printf("  - %v\n", pokemon.Pokemon.Name)
+	}
+
+	return nil
+}
+
+func commandCatch(pokemon string, config *Config, cache *pokecache.Cache) error {
+	if pokemon == "" {
+		return errors.New("you need to enter a pokemon to catch")
+	}
+	pokemonInfo, err := config.PokeApiClient.GetPokemon(pokemon)
+	if err != nil {
+		return err
+	}
+
+	captureMessage := fmt.Sprintf("Throwing a Pokeball at %v...", pokemonInfo.Name)
+	fmt.Println(captureMessage)
+
+	chance := rand.IntN(500)
+
+	if chance > pokemonInfo.BaseExperience {
+		successCaptureMessage := fmt.Sprintf("%v was caught!", pokemon)
+		fmt.Println(successCaptureMessage)
+		config.Pokedex[pokemon] = pokemonInfo
+		return nil
+	} else {
+		failCaptureMessage := fmt.Sprintf("%v escaped!", pokemon)
+		fmt.Println(failCaptureMessage)
+		return nil
+	}
+}
+
+func commandInspect(pokemon string, config *Config, cache *pokecache.Cache) error {
+	if pokemon == "" {
+		return errors.New("you need to enter a pokemon to inspect")
+	}
+	pokemonInfo, exists := config.Pokedex[pokemon]
+	if !exists {
+		return errors.New("you do not have that pokemon in the pokedex")
+	}
+
+	fmt.Printf("Height: %v\n", pokemonInfo.Height)
+	fmt.Printf("Weight: %v\n", pokemonInfo.Weight)
+	fmt.Printf("Stats: \n")
+	for _, stat := range pokemonInfo.Stats {
+		fmt.Printf("  -%v: %v\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Printf("Types: \n")
+	for _, t := range pokemonInfo.Types {
+		fmt.Printf("  -%v\n", t.Type.Name)
 	}
 
 	return nil
