@@ -52,6 +52,11 @@ func CheckCommands() map[string]cliCommand {
 			description: "View details from pokedex on a given pokemon",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "View all the pokemon you have caught",
+			callback:    commandViewPokedex,
+		},
 	}
 }
 
@@ -171,6 +176,19 @@ func commandInspect(pokemon string, config *Config, cache *pokecache.Cache) erro
 	fmt.Printf("Types: \n")
 	for _, t := range pokemonInfo.Types {
 		fmt.Printf("  -%v\n", t.Type.Name)
+	}
+
+	return nil
+}
+
+func commandViewPokedex(pokedex string, config *Config, cache *pokecache.Cache) error {
+	if len(config.Pokedex) == 0 {
+		fmt.Println("You need to catch more pokemon!")
+		return nil
+	}
+	fmt.Println("Your Pokedex:")
+	for _, pokemon := range config.Pokedex {
+		fmt.Printf("  - %v\n", pokemon.Name)
 	}
 
 	return nil
